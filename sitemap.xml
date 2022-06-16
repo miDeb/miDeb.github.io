@@ -2,37 +2,47 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://debertol.com/posts/flutter-infinite-lists/</loc>
+    <loc>https://blog.debertol.com/posts/flutter-infinite-lists/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
   
   <url>
-    <loc>https://debertol.com/about/</loc>
+    <loc>https://blog.debertol.com/posts/riverpod-debounce/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
   
   <url>
-    <loc>https://debertol.com/</loc>
+    <loc>https://blog.debertol.com/posts/riverpod-reload/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
   
   <url>
-    <loc>https://debertol.com/page-list/</loc>
+    <loc>https://blog.debertol.com/about/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
   
   <url>
-    <loc>https://debertol.com/tags/</loc>
+    <loc>https://blog.debertol.com/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
   
   <url>
-    <loc>https://debertol.com/tags/flutter/</loc>
+    <loc>https://blog.debertol.com/page-list/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
   
   <url>
-    <loc>https://debertol.com/tags/riverpod/</loc>
+    <loc>https://blog.debertol.com/tags/</loc>
+    <lastmod>2022-06-16</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://blog.debertol.com/tags/flutter/</loc>
+    <lastmod>2022-06-16</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://blog.debertol.com/tags/riverpod/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
 </urlset>
