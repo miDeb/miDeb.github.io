@@ -1,5 +1,4 @@
-# Blog
+# Personal Blog
 
-Based on https://github.com/sidswork/11ty-midnight.
-
-For suggestions and/or bug reports, please don't hesitate to open an issue.
+This repo (https://github.com/mideb/mideb.github.io) contains only the generated content.
+For the source code, please see https://github.com/mideb/personal-blog.
