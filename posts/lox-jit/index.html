@@ -31,16 +31,16 @@
 <p>A bytecode VM works by first compiling a program to bytecode and then executing that bytecode.
 The compiler breaks the program down into an array of opcodes that each represent a basic operation. These opcodes
 are only a single byte in size, which is why this representation is also called &quot;bytecode&quot;. Some opcodes also carry additional
-information, like the opcode to load a constant, which is always followed by an additional byte that stores the index of that constant.</p>
+information, like the opcode to load a constant which is always followed by an additional byte that stores the index of that constant.</p>
 <p>Bytecode is then executed by the virtual machine (VM), which walks through the individual instructions and performs the associated
 operation. The core of the VM is essentially one big <code>match</code> statement (Rust's version of a <code>switch</code> statement) in a loop.</p>
 <h2 id="from-compiling-bytecode-to-compiling-machine-code" tabindex="-1"><a class="direct-link" href="#from-compiling-bytecode-to-compiling-machine-code">From Compiling Bytecode to Compiling Machine Code</a></h2>
-<p>A bytecode VM is conceptually very similar to an actual CPU. A CPU also executes a list of instructions one after the other <span class="gray">(well, actually,
+<p>A bytecode VM is conceptually very similar to an actual CPU, which also executes a list of instructions one after the other <span class="gray">(well, actually,
 for optimization purposes CPUs don't execute instructions strictly in order, but we won't get into that)</span>. CPUs obviously don't understand the bytecode we defined
 for our little language, the're made for an architecture specific machine code. Real compilers have different backends to support multiple architectures
-<span class="gray">(such as x64, ARM or RISC-V)</span>, but we will focus on only one of them, x64 <span class="gray">(because that's what my computer is running on right now)</span>. We can expect
-the CPU to execute machine code faster than the VM can execute bytecode. This is because the CPU is now directly executing compiled lox code, instead
-of executing an interpreter that in turn executes lox code. CPUs are also really well optimized, and we can now directly benefit from those optimizations.</p>
+<span class="gray">(such as x64, ARM or RISC-V)</span>, but <code>loxjit</code> supports on only one of them, x64 <span class="gray">(because that's what my computer is running on right now)</span>.
+We can expect a performance improvement if the CPU is directly executing compiled lox code, instead of executing an interpreter that in turn executes lox code.
+CPUs are really well optimized, which we benefit from.</p>
 <p>&quot;Crafting Interpreters&quot; already provides us with a bytecode virtual machine (<code>clox</code>) that we can use as a starting point to compile to machine code.
 There is already a compiler that emits bytecode. We'll just have to modify it to emit machine code instead! I didn't want to write my own assembler,
 so I used <code>dynasm-rs</code> to translate assembly to actual machine code. With that out of the way, we'll have to modify the compiler just so that it emits
@@ -51,23 +51,25 @@ tool to help with that. And just like that, <code>loxjit</code> was born.</p>
 <p>Some things however are different with assembly than with bytecode: While the VM knows of its current call frame and has its own stack of values, our implementation
 has to use the native stack. The native stack is also used for other things, like storing the return address of functions <span class="gray">(this is mandated by the x64 architecture itself -
 the <code>call</code> instruction pushes the current instruction pointer to the stack and the <code>ret</code> instruction restores it)</span>. We also use the stack to store
-the pointer to the function we're in, and the pointer to the base of the current call frame, when calling a function. When the function returns, they will again be restored.
+the pointer to the function we're in <span class="gray">(this is needed to resolve upvalues in closures)</span> and the pointer to the base of the current call frame, while calling a function.
+When the function later returns, they will again be restored to registers.
 Something to keep in mind is that the native stack grows downwards instead of upwards, which means that pushing something to the stack <span class="gray">(using the <code>push</code> instruction)</span> will decrement
 the pointer to the last value on the stack <span class="gray">(this pointer is called the &quot;stack pointer&quot; and is stored in its own register)</span>.</p>
 <h3 id="vm-calls" tabindex="-1"><a class="direct-link" href="#vm-calls">VM Calls</a></h3>
 <p>I did not implement everything in assembly. Some things, like the garbage collector or the code to print a value to the console, are still written in the host language (Rust).
-Rust functions can be called from the assembly if we assign them a specific calling convention <span class="gray">(Rust does not have a stable ABI, so we have to use something foreign)</span>. I chose to use
+Rust functions can be called from assembly if we assign them a specific calling convention <span class="gray">(Rust does not have a stable ABI, so we have to use something foreign)</span>. I chose to use
 the <code>win64</code> calling convention, because that one seems to be supported on most platforms. Depending on the calling convention certain registers are volatile or non-volatile
 <span class="gray">(volatile registers can be overwritten by a called function)</span>
-and different registers are used to pass arguments and return values. Something I didn't initially know was that the stack also had to be aligned by 16 bytes before calling.</p>
+and different registers are used to pass arguments and return values.
+Something I didn't initially know was that the stack also had to be aligned by 16 bytes before calling.</p>
 <h3 id="constants" tabindex="-1"><a class="direct-link" href="#constants">Constants</a></h3>
-<p><code>clox</code> has a constant table where all the constants are stored. <code>loxjit</code> compiles all constants into the machine code. This means the number of constants is now essentially unlimited.</p>
+<p><code>clox</code> has a constant table where all the constants are stored. <code>loxjit</code> compiles all constants into the machine code, which means the number of constants is now essentially unlimited.</p>
 <h3 id="garbage-collection" tabindex="-1"><a class="direct-link" href="#garbage-collection">Garbage Collection</a></h3>
 <p>Garbage collection isn't actually that different. Instead of walking the custom stack the GC has to go through the native stack, which is exactly the same.
 Due to lox's value representation it will interpret all the extra pointers lying around on the stack <span class="gray">(return addresses, etc.)</span> as floating point values
 and ignore them for garbage collection.</p>
 <h2 id="optimizations" tabindex="-1"><a class="direct-link" href="#optimizations">Optimizations</a></h2>
-<p>Compiling to native code already is a performance improvement, but there's some more things I did:</p>
+<p>Compiling to native code already is a performance improvement in itself, but there's some more things I did:</p>
 <h3 id="accessing-globals-without-hash-lookups" tabindex="-1"><a class="direct-link" href="#accessing-globals-without-hash-lookups">Accessing Globals Without Hash Lookups</a></h3>
 <p><code>clox</code> uses HashMap lookups to read/write global variables. <code>loxjit</code> instead assigns each global variable an index and looks it up in an array.
 The only remaining runtime cost is to check whether the variable has been defined before. If it hasn't been defined, using it is a runtime error
@@ -83,12 +85,13 @@ caches the hash in the string object itself.</span></p>
 <p>So far we have only talked about compiling some code and then running it. But what if we change the code while running it,
 to make it faster? This is where Inline Caches (ICs) come into play. They use the fact that while it is theoretically possible to
 pass totally random objects around in a dynamic programming language, this rarely happens. Instead, in most cases, a certain place
-in the code will always see the same kind of object repeatedly. This allows us to change code from always going <em>&quot;We need property 'foo' of
+in the code will always see the same kind of object repeatedly.</p>
+<p>This allows us to change code from always going <em>&quot;We need property 'foo' of
 this object -&gt; look it up in the HashMap -&gt; found!&quot;</em> to going <em>&quot;Is it the same kind of object as before -&gt; if so, the property we're looking
 for must be at the same index as before -&gt; found!&quot;</em>.</p>
 <p>You might have noticed the main difference: Instead of performing a hash lookup we only perform a lookup by index.
-Another thing that might have caught your eye is the part where the new code checks for the &quot;kind of object&quot; it is. This is called the &quot;shape&quot; of an object (an alternative
-name would be &quot;hidden class&quot;). The shape of an object describes how it is laid out, i.e. at what index a property with a certain name can be found. The object itself only
+Another thing that might have caught your eye is the part where the new code checks for the &quot;kind of object&quot; it is. This is called the &quot;shape&quot; of an object <span class="gray">(an alternative
+name would be &quot;hidden class&quot;)</span>. The shape of an object describes how it is laid out, i.e. at what index a property with a certain name can be found. The object itself only
 contains an array of properties that we can index into.</p>
 <p>To make this work we need to make sure that objects that look the same also have the same <code>shape</code> assigned to them. This is achieved using a
 tree of shapes that makes sure that objects that have the same properties added to them in the same order end up with the same <code>shape</code>. <span class="gray">Other implementations
@@ -99,9 +102,10 @@ might use more sophisticated techniques, but this seemed good enough for me.</sp
 <pre class="language-nasm"><code class="language-nasm"><span class="highlight-line"><span class="token comment">; rax = receiver.shape</span></span><br><span class="highlight-line">mov <span class="token register variable">rax</span>, QWORD <span class="token operator">[</span><span class="token register variable">rcx</span> <span class="token operator">+</span> <span class="token number">0x10</span><span class="token operator">]</span></span><br><span class="highlight-line"><span class="token comment">; r8 = cached shape pointer</span></span><br><mark class="highlight-line highlight-line-active">mov <span class="token register variable">r8</span>, QWORD <span class="token number">0</span></mark><br><span class="highlight-line">cmp <span class="token register variable">r8</span>, <span class="token register variable">rax</span></span><br><span class="highlight-line"><span class="token comment">; No match, jump to the slow path</span></span><br><span class="highlight-line">jne <span class="token operator">></span>ic_end</span><br><span class="highlight-line"><span class="token comment">; rax = receiver.fields</span></span><br><span class="highlight-line">mov <span class="token register variable">rax</span>, QWORD <span class="token operator">[</span><span class="token register variable">rcx</span> <span class="token operator">+</span> <span class="token number">0x18</span><span class="token operator">]</span></span><br><span class="highlight-line"><span class="token comment">; rax = fields[0]</span></span><br><mark class="highlight-line highlight-line-active">mov <span class="token register variable">rax</span>, QWORD <span class="token operator">[</span><span class="token register variable">rax</span> <span class="token operator">+</span> <span class="token number">0</span><span class="token operator">]</span></mark><br><span class="highlight-line"><span class="token comment">; store the result on the stack</span></span><br><span class="highlight-line">mov QWORD <span class="token operator">[</span><span class="token register variable">rsp</span> <span class="token operator">+</span> <span class="token operator">$</span>stack_offset<span class="token operator">]</span>, <span class="token register variable">rax</span></span><br><span class="highlight-line"><span class="token comment">; Jump over the slow path</span></span><br><span class="highlight-line">jmp <span class="token operator">></span>ok</span><br><span class="highlight-line"></span><br><span class="highlight-line"><span class="token label function">ic_end:</span></span></code></pre>
 <p>The inline cache is part of the compiled output from the very beginning, but only after a <code>property_get</code> has succeeded on the slow path it will be enabled.
 As you can see, initially the cached shape pointer is set to <code>0</code>. This makes sure that the Inline Cache is ignored before it is enabled, because <code>0</code> can
-never be a valid pointer to a shape.
-To enable it, we set the shape pointer and the property index <span class="gray">(I've highlighted the relevant lines)</span>. Now, if the same property access is
-run again with a receiver of the same shape, it will hit the inline cache and be much faster than the first time.</p>
+never be a valid pointer to a shape.</p>
+<p>To enable it, we set the shape pointer and the property index <span class="gray">(I've highlighted the relevant lines)</span>. Now, if the same property access is
+run again with a receiver of the same shape, it will hit the inline cache and be much faster than the first time. You can now also see why it is called an <em>inline</em> cache:
+All the information (shape pointer and property index) is stored in the code itself, not in an external data structure.</p>
 <h2 id="performance-evaluation" tabindex="-1"><a class="direct-link" href="#performance-evaluation">Performance Evaluation</a></h2>
 <p>Let's look at two benchmarks to determine the improvement we got:</p>
 <h3 id="slow-fibonacci" tabindex="-1"><a class="direct-link" href="#slow-fibonacci">Slow Fibonacci</a></h3>
@@ -111,7 +115,7 @@ run again with a receiver of the same shape, it will hit the inline cache and be
 <p><img src="../../img/loxjit-perf-fib.svg"></img></p>
 <p>The performance improvement we see here is the result of compiling to machine code, which is most noticeable
 in code like this that does a lot simple numeric operations and function calls. Unsurprisingly, enabling inline caches has
-no effect here because ICs are only used for property access and method calls, which this code has exactly zero.</p>
+no effect here because ICs are only used for property access and method calls, of which this code has exactly zero.</p>
 <h3 id="property-accesses-and-method-calls" tabindex="-1"><a class="direct-link" href="#property-accesses-and-method-calls">Property Accesses and Method Calls</a></h3>
 <p>You can find the whole benchmark <a href="https://github.com/munificent/craftinginterpreters/blob/01e6f5b8f3e5dfa65674c2f9cf4700d73ab41cf8/test/benchmark/properties.lox">here</a>,
 but it essentially looks like this:</p>
