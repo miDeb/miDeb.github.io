@@ -45,4 +45,24 @@
     <loc>https://blog.debertol.com/tags/riverpod/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
+  
+  <url>
+    <loc>https://blog.debertol.com/tags/rust/</loc>
+    <lastmod>2022-06-16</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://blog.debertol.com/tags/lox/</loc>
+    <lastmod>2022-06-16</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://blog.debertol.com/tags/jit/</loc>
+    <lastmod>2022-06-16</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://blog.debertol.com/posts/lox-jit/</loc>
+    <lastmod>2022-12-07</lastmod>
+  </url>
 </urlset>
