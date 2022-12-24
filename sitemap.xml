@@ -37,16 +37,6 @@
   </url>
   
   <url>
-    <loc>https://blog.debertol.com/tags/flutter/</loc>
-    <lastmod>2022-06-16</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://blog.debertol.com/tags/riverpod/</loc>
-    <lastmod>2022-06-16</lastmod>
-  </url>
-  
-  <url>
     <loc>https://blog.debertol.com/tags/rust/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
@@ -58,6 +48,16 @@
   
   <url>
     <loc>https://blog.debertol.com/tags/jit/</loc>
+    <lastmod>2022-06-16</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://blog.debertol.com/tags/flutter/</loc>
+    <lastmod>2022-06-16</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://blog.debertol.com/tags/riverpod/</loc>
     <lastmod>2022-06-16</lastmod>
   </url>
   
